@@ -3,6 +3,9 @@ import { UploadCloud, Trash2, CheckCircle2, Maximize2, Minimize2, Settings2, Cro
 import jsPDF from 'jspdf';
 import ReactCrop, { type Crop as CropType } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import optik30 from './assets/optik_30.png';
 import optik60 from './assets/optik_60.png';
 import optik90 from './assets/optik_90.png';
@@ -632,8 +635,48 @@ function App() {
 
       // Dosyaları Kaydet (İki farklı PDF)
       const baseName = testAdi ? fixTr(testAdi).replace(/\s+/g, '_') : 'Sinav';
-      doc.save(`${baseName}_Sorular.pdf`);
-      ansDoc.save(`${baseName}_CevapAnahtari.pdf`);
+
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const pdfBase64 = doc.output('datauristring').split(',')[1];
+          const savedSorular = await Filesystem.writeFile({
+            path: `${baseName}_Sorular.pdf`,
+            data: pdfBase64,
+            directory: Directory.Cache
+          });
+
+          await Share.share({
+            title: 'Sınav Soruları PDF',
+            url: savedSorular.uri,
+            dialogTitle: 'Soruları Paylaş'
+          });
+
+          const ansBase64 = ansDoc.output('datauristring').split(',')[1];
+          const savedCevap = await Filesystem.writeFile({
+            path: `${baseName}_CevapAnahtari.pdf`,
+            data: ansBase64,
+            directory: Directory.Cache
+          });
+
+          // Cevap anahtarı için kullanıcıya bilgi ver veya sessize al
+          // Çünkü üst üste 2 share menüsü açmak Android'de sorun çıkarabilir.
+          // Kullanıcı genellikle sınavı yazdırmak veya paylaşmak istiyor, cevap anahtarını da sadece telefona kaydedip indirebilir.
+          alert(`PDF'ler önbelleğe oluşturuldu! Cevap anahtarını paylaşmak için tamam'a (OK) basınız.`);
+
+          await Share.share({
+            title: 'Cevap Anahtarı PDF',
+            url: savedCevap.uri,
+            dialogTitle: 'Cevap Anahtarı Paylaş'
+          });
+
+        } catch (e) {
+          console.error("PDF dışa aktarma hatası:", e);
+          alert('Uygulama içinde PDF başlatılamadı. Hata: ' + String(e));
+        }
+      } else {
+        doc.save(`${baseName}_Sorular.pdf`);
+        ansDoc.save(`${baseName}_CevapAnahtari.pdf`);
+      }
 
     } catch (error) {
       console.error("PDF oluşturulurken hata:", error);
