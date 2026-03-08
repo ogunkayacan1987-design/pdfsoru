@@ -15,7 +15,7 @@ interface Question {
   file: File;
   previewUrl: string;
   answer: string | null;
-  isExpanded: boolean;
+  expandType: 'none' | 'normal' | 'half' | 'full';
 }
 
 interface Section {
@@ -116,7 +116,7 @@ function App() {
           file,
           previewUrl: URL.createObjectURL(file),
           answer: autoAnswer,
-          isExpanded: false
+          expandType: 'none' as const
         };
       });
 
@@ -159,8 +159,8 @@ function App() {
     setQuestions(prev => prev.map(q => q.id === id ? { ...q, answer } : q));
   };
 
-  const toggleExpand = (id: string) => {
-    setQuestions(prev => prev.map(q => q.id === id ? { ...q, isExpanded: !q.isExpanded } : q));
+  const setExpandType = (id: string, type: 'none' | 'normal' | 'half' | 'full') => {
+    setQuestions(prev => prev.map(q => q.id === id ? { ...q, expandType: type } : q));
   };
 
   const swapQuestion = (currentIndex: number) => {
@@ -365,7 +365,7 @@ function App() {
       // --- SORULAR PDF'İ OLUŞTURMA ---
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-      const marginX = 15;
+      const marginX = 7.5;
       const marginY = 0;
       const pageHeight = 297;
       const pageWidth = 210;
@@ -522,13 +522,17 @@ function App() {
         const { img, dataUrl } = await loadImage(q.file);
 
         const numberWidth = 8;
-        const targetImgWidth = q.isExpanded ? (fullWidth - numberWidth) : (colWidth - numberWidth);
+        const targetImgWidth = q.expandType !== 'none' ? (fullWidth - numberWidth) : (colWidth - numberWidth);
 
         let renderWidth = targetImgWidth;
         let renderHeight = (img.naturalHeight / img.naturalWidth) * targetImgWidth;
 
-        if (renderHeight > MAX_IMG_HEIGHT) {
-          renderHeight = MAX_IMG_HEIGHT;
+        let currentMaxHeight = MAX_IMG_HEIGHT;
+        if (q.expandType === 'half') currentMaxHeight = 135;
+        if (q.expandType === 'full') currentMaxHeight = 275;
+
+        if (renderHeight > currentMaxHeight) {
+          renderHeight = currentMaxHeight;
           renderWidth = (img.naturalWidth / img.naturalHeight) * renderHeight;
         }
 
@@ -543,7 +547,7 @@ function App() {
           try { doc.addImage(dataUrl, 'JPEG', x + numberWidth, y, renderWidth, renderHeight, '', 'FAST'); } catch (err) { }
         };
 
-        if (q.isExpanded) {
+        if (q.expandType !== 'none') {
           commitVerticalLine();
 
           if (currentY + totalItemHeight > pageHeight - 9) { // Header/footer paddingleri sıfırlandı sayılır, limit daha alta çekildi
@@ -757,12 +761,25 @@ function App() {
         {questions.length > 0 && (
           <div className="questions-grid">
             {questions.map((q, index) => (
-              <div key={q.id} className={`question-card split-card ${q.isExpanded ? 'is-expanded' : ''}`}>
+              <div key={q.id} className={`question-card split-card ${q.expandType !== 'none' ? 'is-expanded' : ''}`}>
                 <div className="card-sidebar">
                   <span className="question-number">{index + 1}</span>
-                  <button className="icon-btn" title={q.isExpanded ? "Daralt" : "Genişlet (2 Sütun)"} onClick={() => toggleExpand(q.id)}>
-                    {q.isExpanded ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-                  </button>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center', background: 'var(--bg-card)', padding: '4px', borderRadius: '4px', width: '100%' }}>
+                    <button className={`icon-btn ${q.expandType === 'none' ? 'active' : ''}`} title="Daralt" onClick={() => setExpandType(q.id, 'none')} style={{ padding: '4px' }}>
+                      <Minimize2 size={16} color={q.expandType === 'none' ? 'var(--primary)' : 'currentColor'} />
+                    </button>
+                    <button className={`icon-btn ${q.expandType === 'normal' ? 'active' : ''}`} title="Genişlet (Normal)" onClick={() => setExpandType(q.id, 'normal')} style={{ padding: '4px' }}>
+                      <Maximize2 size={16} color={q.expandType === 'normal' ? 'var(--primary)' : 'currentColor'} />
+                    </button>
+                    <button className={`icon-btn ${q.expandType === 'half' ? 'active' : ''}`} title="Yarım Sayfa Genişlet" style={{ fontSize: '11px', fontWeight: 'bold', padding: '4px', color: q.expandType === 'half' ? 'var(--primary)' : 'currentColor' }} onClick={() => setExpandType(q.id, 'half')}>
+                      1/2
+                    </button>
+                    <button className={`icon-btn ${q.expandType === 'full' ? 'active' : ''}`} title="Tam Sayfa Genişlet" style={{ fontSize: '10px', fontWeight: 'bold', padding: '4px', color: q.expandType === 'full' ? 'var(--primary)' : 'currentColor' }} onClick={() => setExpandType(q.id, 'full')}>
+                      TAM
+                    </button>
+                  </div>
+
                   <button className="icon-btn" title="Soruyu Kırp" onClick={() => openCropModal(q.id)}>
                     <Crop size={20} />
                   </button>
@@ -776,7 +793,9 @@ function App() {
 
                 <div className="card-content">
                   <div className="question-header">
-                    <span className="question-badge">{q.isExpanded ? "Geniş Soru (Tüm Satır)" : "Dar Soru (Tek Sütun)"}</span>
+                    <span className="question-badge">
+                      {q.expandType === 'full' ? "Tam Sayfa" : q.expandType === 'half' ? "Yarım Sayfa" : q.expandType === 'normal' ? "Geniş Soru" : "Dar Soru (Tek Sütun)"}
+                    </span>
                   </div>
                   <div className="question-image-container">
                     <img src={q.previewUrl} alt={`Soru ${index + 1}`} className="question-image" />
