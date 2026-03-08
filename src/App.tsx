@@ -536,7 +536,7 @@ function App() {
           renderWidth = (img.naturalWidth / img.naturalHeight) * renderHeight;
         }
 
-        const spacing = 8; // V7: 12'den 8'e düşürdük, alandan tasarruf
+        const spacing = 2; // V8: Sorular arası boşluğu tamamen minimize ettik (8'den 2'ye düştü)
         const totalItemHeight = renderHeight + spacing;
 
         const printRow = (x: number, y: number) => {
