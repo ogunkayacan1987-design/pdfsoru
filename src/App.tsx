@@ -163,7 +163,7 @@ function App() {
     setQuestions(prev => prev.map(q => q.id === id ? { ...q, isExpanded: !q.isExpanded } : q));
   };
 
-  const swapQuestion = (id: string, currentIndex: number) => {
+  const swapQuestion = (currentIndex: number) => {
     const targetQStr = prompt(`Bu soruyu kaçıncı soru ile yer değiştirmek istiyorsunuz? (Mevcut Sıra: ${currentIndex + 1}, Toplam Soru: ${questions.length})`);
     if (!targetQStr) return;
 
@@ -766,7 +766,7 @@ function App() {
                   <button className="icon-btn" title="Soruyu Kırp" onClick={() => openCropModal(q.id)}>
                     <Crop size={20} />
                   </button>
-                  <button className="icon-btn" title="Sırasını Değiştir" onClick={() => swapQuestion(q.id, index)}>
+                  <button className="icon-btn" title="Sırasını Değiştir" onClick={() => swapQuestion(index)}>
                     <ArrowLeftRight size={20} />
                   </button>
                   <button className="icon-btn danger" title="Soruyu Sil" onClick={() => removeQuestion(q.id, q.previewUrl)}>
