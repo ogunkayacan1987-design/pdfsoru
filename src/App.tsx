@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { UploadCloud, Trash2, CheckCircle2, Maximize2, Minimize2, Settings2, Crop, FolderDown } from 'lucide-react';
+import { UploadCloud, Trash2, CheckCircle2, Maximize2, Minimize2, Settings2, Crop, FolderDown, ArrowLeftRight } from 'lucide-react';
 import jsPDF from 'jspdf';
 import ReactCrop, { type Crop as CropType } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -163,6 +163,27 @@ function App() {
     setQuestions(prev => prev.map(q => q.id === id ? { ...q, isExpanded: !q.isExpanded } : q));
   };
 
+  const swapQuestion = (id: string, currentIndex: number) => {
+    const targetQStr = prompt(`Bu soruyu kaçıncı soru ile yer değiştirmek istiyorsunuz? (Mevcut Sıra: ${currentIndex + 1}, Toplam Soru: ${questions.length})`);
+    if (!targetQStr) return;
+
+    const targetIndex = parseInt(targetQStr, 10) - 1;
+    if (isNaN(targetIndex) || targetIndex < 0 || targetIndex >= questions.length) {
+      alert("Lütfen geçerli bir soru numarası giriniz.");
+      return;
+    }
+
+    if (targetIndex === currentIndex) return;
+
+    setQuestions(prev => {
+      const newArr = [...prev];
+      const temp = newArr[currentIndex];
+      newArr[currentIndex] = newArr[targetIndex];
+      newArr[targetIndex] = temp;
+      return newArr;
+    });
+  };
+
   // Google Drive İşlemleri
   const extractFolderId = (url: string) => {
     const match = url.match(/folders\/([a-zA-Z0-9_-]+)/);
@@ -197,6 +218,13 @@ function App() {
         setIsFetchingDrive(false);
         return;
       }
+
+      // Dosyaları içerdikleri sayılara göre sırala
+      filesInfo.sort((a: any, b: any) => {
+        const numA = parseInt(a.name.match(/\d+/) || ['0'][0], 10);
+        const numB = parseInt(b.name.match(/\d+/) || ['0'][0], 10);
+        return numA - numB;
+      });
 
       // 2. Kalan soru kapasitesini kontrol et
       const remainingSlots = MAX_QUESTIONS - questions.length;
@@ -338,7 +366,7 @@ function App() {
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
       const marginX = 15;
-      const marginY = 15;
+      const marginY = 0;
       const pageHeight = 297;
       const pageWidth = 210;
       const colGap = 10;
@@ -360,10 +388,10 @@ function App() {
       };
 
       const drawFooter = (pdfDoc: jsPDF, pNum: number) => {
-        const footY = pageHeight - 12;
+        const footY = pageHeight - 4; // Margin bottom 0 olduğu için alt köşeye daha yakın
         pdfDoc.setDrawColor(...primaryColor);
         pdfDoc.setLineWidth(0.8);
-        pdfDoc.line(marginX, footY, pageWidth - marginX, footY);
+        pdfDoc.line(0, footY - 4, pageWidth, footY - 4);
         pdfDoc.setDrawColor(0, 0, 0);
         pdfDoc.setLineWidth(0.2);
 
@@ -371,15 +399,15 @@ function App() {
         pdfDoc.setFontSize(10);
         pdfDoc.setTextColor(100, 116, 139);
         const fText = okulAdi ? fixTr(okulAdi).toUpperCase() : "SORU BANKASI";
-        pdfDoc.text(fText, marginX, footY + 4.5);
-        pdfDoc.text(pNum.toString(), pageWidth - marginX, footY + 4.5, { align: 'right' });
+        pdfDoc.text(fText, 5, footY);
+        pdfDoc.text(pNum.toString(), pageWidth - 5, footY, { align: 'right' });
       };
 
       const drawHeader = (pdfDoc: jsPDF) => {
-        let hdrY = marginY;
-        const boxMargin = marginX;
+        let hdrY = 0; // Margin top 0
+        const boxMargin = 0;
         const boxTop = hdrY;
-        const boxWidth = fullWidth;
+        const boxWidth = pageWidth;
         const boxHeight = 12; // V7 Çok Daha Kompakt (2 Satır)!
 
         pdfDoc.setDrawColor(...primaryColor);
@@ -405,7 +433,7 @@ function App() {
           pdfDoc.text(line2, pageWidth / 2, hdrY + 9.5, { align: 'center' });
         }
 
-        return boxTop + boxHeight + 3; // Altından devam edilecek güvenli hiza (daha da dar)
+        return boxTop + boxHeight + 2; // Altından devam edilecek güvenli hiza
       };
 
       const drawVerticalLine = (topY: number, botY: number) => {
@@ -436,14 +464,14 @@ function App() {
       };
 
       const addNewPage = () => {
-        const footerY = pageHeight - 15;
+        const footerY = pageHeight - 8; // Alt çizgi hizası
         drawVerticalLine(columnStartY, footerY); // Sayfa sonuna kadar in
         drawFooter(doc, pageNum);
 
         doc.addPage();
         pageNum++;
 
-        const newPageStart = marginY;
+        const newPageStart = marginY + 2; // 2mm padding for new page
         currentY = newPageStart;
         columnStartY = newPageStart;
         maxBottomY = newPageStart;
@@ -454,7 +482,7 @@ function App() {
         commitVerticalLine(); // Any previous layout stops
 
         // Check if there is enough space for a header (e.g. 20mm + some cushion)
-        if (startYTitle > pageHeight - marginY - 25) {
+        if (startYTitle > pageHeight - 25) {
           addNewPage();
           startYTitle = currentY;
         }
@@ -518,7 +546,7 @@ function App() {
         if (q.isExpanded) {
           commitVerticalLine();
 
-          if (currentY + totalItemHeight > pageHeight - marginY - 8) { // V7: Sayfa altına daha çok yaklaşsın (15'ten 8'e düştü)
+          if (currentY + totalItemHeight > pageHeight - 9) { // Header/footer paddingleri sıfırlandı sayılır, limit daha alta çekildi
             addNewPage();
           }
 
@@ -530,11 +558,11 @@ function App() {
           activeColumn = 0;
 
         } else {
-          if (currentY + totalItemHeight > pageHeight - marginY - 8) {
+          if (currentY + totalItemHeight > pageHeight - 9) {
             if (activeColumn === 0) {
               activeColumn = 1;
               currentY = columnStartY;
-              if (currentY + totalItemHeight > pageHeight - marginY - 8) {
+              if (currentY + totalItemHeight > pageHeight - 9) {
                 addNewPage(); // Sağ sütun da sığmıyorsa mecburen yeni sayfa!
               }
             } else {
@@ -627,8 +655,8 @@ function App() {
         ansDoc.text(ansText, ansX + 20, ansY);
         ansY += 8;
 
-        if (ansY > pageHeight - marginY - 10) {
-          ansY = marginY + 20;
+        if (ansY > pageHeight - 10) {
+          ansY = 20;
           ansX += 60;
         }
       }
@@ -737,6 +765,9 @@ function App() {
                   </button>
                   <button className="icon-btn" title="Soruyu Kırp" onClick={() => openCropModal(q.id)}>
                     <Crop size={20} />
+                  </button>
+                  <button className="icon-btn" title="Sırasını Değiştir" onClick={() => swapQuestion(q.id, index)}>
+                    <ArrowLeftRight size={20} />
                   </button>
                   <button className="icon-btn danger" title="Soruyu Sil" onClick={() => removeQuestion(q.id, q.previewUrl)}>
                     <Trash2 size={20} />
