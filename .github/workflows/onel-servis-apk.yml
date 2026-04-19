@@ -1,0 +1,86 @@
+name: ÖNEL Servis APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'claude/**'
+    paths:
+      - 'mobile-app/**'
+      - 'google-apps-script/**'
+      - '.github/workflows/onel-servis-apk.yml'
+  pull_request:
+    paths:
+      - 'mobile-app/**'
+      - '.github/workflows/onel-servis-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build mobile-app debug APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: TypeScript build
+        run: npm run build
+
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Initialize Capacitor Android project
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync android
+
+      - name: Gradle assembleDebug
+        working-directory: mobile-app/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace --warning-mode all
+
+      - name: Locate APK
+        if: always()
+        run: |
+          echo "APK arama..."
+          find android/app/build/outputs -name "*.apk" 2>/dev/null || true
+
+      - name: Upload APK artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: onel-servis-debug-apk
+          path: mobile-app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: onel-servis-build-logs
+          path: |
+            mobile-app/android/app/build/reports/
+            mobile-app/android/build/reports/
+          if-no-files-found: ignore
