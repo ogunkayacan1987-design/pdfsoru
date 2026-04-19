@@ -46,8 +46,8 @@ async function call<T>(action: string, params: Record<string, unknown> = {}): Pr
     url,
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     data: JSON.stringify(body),
-    connectTimeout: 15,
-    readTimeout: 30,
+    connectTimeout: 30000,
+    readTimeout: 60000,
   });
 
   if (res.status < 200 || res.status >= 300) {
