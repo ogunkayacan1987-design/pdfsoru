@@ -1,0 +1,167 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body, #root { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: 'Segoe UI', -apple-system, system-ui, Roboto, sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+.topbar {
+  background: #1e3a8a;
+  color: #fff;
+  padding: env(safe-area-inset-top) 14px 12px;
+  padding-top: max(env(safe-area-inset-top), 12px);
+}
+.topbar .logo { display: flex; align-items: center; gap: 10px; padding-top: 4px; }
+.topbar .mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #fff; color: #1e3a8a; font-weight: 900; font-style: italic;
+  padding: 2px 8px; border-radius: 4px; font-size: 16px;
+}
+.topbar .brand { font-weight: 800; font-size: 17px; letter-spacing: .3px; }
+.topbar .sub { font-size: 11px; opacity: .85; }
+
+.tabs {
+  display: flex;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.tabs button {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  padding: 12px 6px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #64748b;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+.tabs button.active {
+  color: #1e3a8a;
+  border-bottom-color: #1e3a8a;
+}
+
+.content { flex: 1; padding: 12px 14px 80px; }
+
+.form { display: grid; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field > span {
+  font-weight: 600;
+  font-size: 12px;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.field input, .field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  background: #fff;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.field input:focus, .field textarea:focus {
+  border-color: #1e3a8a;
+  box-shadow: 0 0 0 3px rgba(30,58,138,.15);
+}
+.field textarea { resize: vertical; min-height: 70px; }
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.btn {
+  flex: 1;
+  min-width: 110px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #e2e8f0;
+  color: #1e293b;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+.btn:disabled { opacity: .5; }
+.btn.primary { background: #1e3a8a; color: #fff; }
+.btn.ghost { background: transparent; color: #1e3a8a; border: 1px solid #cbd5e1; }
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 16px;
+  right: 16px;
+  background: #16a34a;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(0,0,0,.18);
+  z-index: 100;
+}
+.toast.err { background: #dc2626; }
+
+/* Raporlar */
+.rapor { display: flex; flex-direction: column; gap: 12px; }
+.filtreler {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.filtreler .full { grid-column: 1 / -1; }
+.filtreler .actions { grid-column: 1 / -1; }
+.ozet { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kart {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.kart .lbl { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+.kart .val { font-size: 22px; font-weight: 800; color: #1e3a8a; }
+
+.bos { padding: 30px; text-align: center; color: #64748b; }
+.liste { display: flex; flex-direction: column; gap: 10px; }
+.kayit {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.kayit-ust { display: flex; justify-content: space-between; align-items: center; }
+.kayit .zaman {
+  display: inline-block; padding: 2px 8px;
+  background: #dbeafe; color: #1e3a8a;
+  border-radius: 999px; font-size: 11px; font-weight: 700;
+}
+.kayit .ucret { font-weight: 700; color: #1e3a8a; }
+.kayit .musteri { font-weight: 700; font-size: 16px; }
+.kayit .cihaz { color: #475569; font-size: 13px; }
+.kayit .alan { font-size: 13px; color: #334155; margin-top: 2px; }
+.kayit .actions { margin-top: 6px; }
+.kayit .btn { flex: initial; padding: 8px 14px; font-size: 13px; }
+
+.aciklama {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin: 0 0 4px;
+}
+code { background: #e0e7ff; padding: 1px 6px; border-radius: 4px; font-size: 12px; }

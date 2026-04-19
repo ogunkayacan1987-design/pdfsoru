@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<base target="_top">
+<title>ÖNEL BİLİŞİM - Servis Fişi</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #eef2f7;
+    color: #1e293b;
+  }
+  .container {
+    max-width: 1000px;
+    margin: 24px auto;
+    padding: 0 16px 28px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    padding: 22px 26px 26px;
+  }
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  .app-header h1 { margin: 0; font-size: 20px; color: #1e3a8a; }
+  .app-header .muted { color: #64748b; font-size: 13px; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #cbd5e1;
+  }
+  .tab {
+    padding: 10px 18px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #475569;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    font-size: 14px;
+  }
+  .tab.active {
+    background: #fff;
+    color: #1e3a8a;
+    border-color: #cbd5e1;
+    position: relative;
+    top: 1px;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .full { grid-column: 1 / -1; }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #334155;
+  }
+  input, textarea, select {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    background: #fff;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 3px rgba(30,58,138,.15);
+  }
+  textarea { min-height: 90px; resize: vertical; }
+
+  .buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  button {
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .btn-primary { background: #1e3a8a; color: #fff; }
+  .btn-primary:hover { background: #172554; }
+  .btn-secondary { background: #e2e8f0; color: #1e293b; }
+  .btn-secondary:hover { background: #cbd5e1; }
+  .btn-link { background: transparent; color: #1e3a8a; padding: 6px 10px; }
+  .btn-link:hover { text-decoration: underline; }
+  .btn-small { padding: 4px 10px; font-size: 12px; }
+  .btn-danger { background: #b91c1c; color: #fff; }
+
+  .toast {
+    position: fixed; top: 18px; right: 18px;
+    background: #16a34a; color: #fff;
+    padding: 10px 14px; border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,.15);
+    display: none;
+    z-index: 9999;
+  }
+
+  /* === RAPOR === */
+  .filter-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr auto auto;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 14px;
+  }
+  .filter-bar .btn-small { align-self: end; height: 38px; }
+
+  .summary {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .stat {
+    flex: 1;
+    min-width: 160px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .stat .lbl { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+  .stat .val { font-size: 20px; font-weight: 700; color: #1e3a8a; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+  table.rpt {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.rpt th, table.rpt td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+    vertical-align: top;
+  }
+  table.rpt th {
+    background: #f1f5f9;
+    font-weight: 700;
+    color: #1e293b;
+    position: sticky;
+    top: 0;
+  }
+  table.rpt tr:hover { background: #f8fafc; }
+  table.rpt td.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #dbeafe;
+    color: #1e3a8a;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .empty { padding: 24px; text-align: center; color: #64748b; }
+  .truncate { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .kurulum-bilgi {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    color: #78350f;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    font-size: 13px;
+  }
+
+  /* =================== BASKI ALANI =================== */
+  .print-area { display: none; }
+
+  @media print {
+    body { background: #fff; }
+    .container, .toast { display: none !important; }
+    .print-area { display: block; }
+    @page { size: A4 landscape; margin: 0; }
+  }
+
+  .a4-sheet {
+    width: 297mm;
+    height: 210mm;
+    display: flex;
+    flex-direction: row;
+    page-break-after: always;
+  }
+  .receipt {
+    width: 148.5mm;
+    height: 210mm;
+    padding: 7mm 8mm;
+    border-right: 1px dashed #94a3b8;
+    position: relative;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #0f172a;
+  }
+  .receipt:last-child { border-right: 0; }
+
+  .r-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 4mm;
+  }
+  .logo-wrap { display: flex; flex-direction: column; }
+  .logo {
+    font-weight: 900;
+    font-size: 20pt;
+    letter-spacing: .5px;
+    color: #1e3a8a;
+    font-style: italic;
+  }
+  .logo .mark {
+    display: inline-block;
+    background: #1e3a8a;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-style: italic;
+    margin-right: 2px;
+  }
+  .logo-sub {
+    font-size: 9pt;
+    color: #334155;
+    margin-top: 1mm;
+    font-style: normal;
+  }
+  .r-title { text-align: right; }
+  .r-title .t1 {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #1e3a8a;
+    letter-spacing: 1px;
+  }
+  .copy-label {
+    display: inline-block;
+    margin-top: 2mm;
+    font-size: 9pt;
+    font-weight: 700;
+    color: #b91c1c;
+    border: 1.5px solid #b91c1c;
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  .r-row { display: flex; gap: 4mm; margin-top: 3mm; }
+  .r-field { flex: 1; }
+  .r-field .lbl {
+    font-size: 8pt;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .r-field .val {
+    font-size: 11pt;
+    color: #0f172a;
+    border-bottom: 1px solid #94a3b8;
+    min-height: 6mm;
+    padding: 1mm 0;
+  }
+
+  .r-box { margin-top: 3mm; }
+  .r-box .lbl {
+    font-size: 8pt;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 1mm;
+  }
+  .r-box .content {
+    border: 1px solid #1e3a8a;
+    border-radius: 2px;
+    padding: 2mm 3mm;
+    font-size: 10pt;
+    color: #0f172a;
+    white-space: pre-wrap;
+    min-height: 30mm;
+  }
+  .r-box.small .content { min-height: 22mm; }
+
+  .r-footer {
+    position: absolute;
+    bottom: 7mm;
+    left: 8mm;
+    right: 8mm;
+  }
+  .r-note {
+    font-size: 8pt;
+    color: #475569;
+    line-height: 1.35;
+    margin-bottom: 5mm;
+    text-align: justify;
+  }
+  .sig-row { display: flex; justify-content: space-between; gap: 6mm; }
+  .sig { flex: 1; text-align: center; font-size: 9pt; color: #334155; }
+  .sig .line { border-top: 1px solid #0f172a; padding-top: 1mm; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <div class="app-header">
+      <div>
+        <h1>ÖNEL BİLİŞİM — Servis Yönetimi</h1>
+        <div class="muted">Fiş oluşturun, kaydedin ve raporlayın.</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="yeni" onclick="sekmeDegistir('yeni')">Yeni Fiş</button>
+      <button class="tab" data-tab="rapor" onclick="sekmeDegistir('rapor')">Raporlar</button>
+    </div>
+
+    <!-- YENİ FİŞ SEKMESİ -->
+    <div class="panel active" id="panel-yeni">
+      <div class="form-grid">
+        <div>
+          <label>Müşteri / Firma Adı Soyadı</label>
+          <input id="musteri" type="text" placeholder="Örn: Ahmet Yılmaz / ABC Ltd.">
+        </div>
+        <div>
+          <label>Telefon</label>
+          <input id="telefon" type="text" placeholder="05xx xxx xx xx">
+        </div>
+        <div>
+          <label>Teslim Alış Tarihi</label>
+          <input id="tarih" type="date">
+        </div>
+        <div>
+          <label>Cihaz / Ürün</label>
+          <input id="cihaz" type="text" placeholder="Örn: Canon IR2520 Fotokopi Makinesi">
+        </div>
+        <div class="full">
+          <label>Müşteri Sorunu / Yapılacak İşler</label>
+          <textarea id="sorun" placeholder="Müşterinin bildirdiği sorun veya istenen işlemler..."></textarea>
+        </div>
+        <div class="full">
+          <label>Yapılan İş ve İşlemler</label>
+          <textarea id="yapilanIs" placeholder="Servis sırasında yapılan işler, değişen parçalar..."></textarea>
+        </div>
+        <div>
+          <label>Ücret (₺)</label>
+          <input id="ucret" type="text" placeholder="0,00">
+        </div>
+        <div>
+          <label>Teslim Alan Yetkili</label>
+          <input id="yetkili" type="text" value="Furkan ÖNEL" placeholder="Yetkili adı soyadı">
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button class="btn-primary" onclick="yazdir()">Yazdir (A4 - 2 Nusha)</button>
+        <button class="btn-secondary" onclick="kaydetVeYazdir()">Kaydet ve Yazdir</button>
+        <button class="btn-secondary" onclick="temizle()">Temizle</button>
+      </div>
+    </div>
+
+    <!-- RAPORLAR SEKMESİ -->
+    <div class="panel" id="panel-rapor">
+      <div id="kurulumUyari" class="kurulum-bilgi" style="display:none;"></div>
+
+      <div class="filter-bar">
+        <div>
+          <label>Başlangıç</label>
+          <input id="f-bas" type="date">
+        </div>
+        <div>
+          <label>Bitiş</label>
+          <input id="f-bit" type="date">
+        </div>
+        <div>
+          <label>Ara (müşteri, telefon, cihaz, sorun...)</label>
+          <input id="f-ara" type="text" placeholder="Örn: Ahmet, fotokopi, Canon...">
+        </div>
+        <button class="btn-primary btn-small" onclick="raporYukle()">Listele</button>
+        <button class="btn-secondary btn-small" onclick="raporSifirla()">Sıfırla</button>
+      </div>
+
+      <div class="summary">
+        <div class="stat"><div class="lbl">Kayıt Sayısı</div><div class="val" id="st-sayi">0</div></div>
+        <div class="stat"><div class="lbl">Toplam Ücret (₺)</div><div class="val" id="st-toplam">0,00</div></div>
+        <div class="stat" style="flex: 2;">
+          <div class="lbl">İşlemler</div>
+          <div style="margin-top: 4px;">
+            <button class="btn-link btn-small" onclick="sheetAc()">Google Sheet'i Aç</button>
+            <button class="btn-link btn-small" onclick="csvIndir()">CSV İndir</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="rpt" id="rpt">
+          <thead>
+            <tr>
+              <th>Kayıt Zamanı</th>
+              <th>Müşteri / Firma</th>
+              <th>Telefon</th>
+              <th>Cihaz</th>
+              <th>Sorun</th>
+              <th>Yapılan İş</th>
+              <th class="n">Ücret</th>
+              <th>Yetkili</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rpt-body">
+            <tr><td colspan="9" class="empty">Listelemek için yukarıdaki "Listele" butonuna basın.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="print-area" id="printArea"></div>
+
+<script>
+  // Bugünün tarihini varsayılan yap
+  document.getElementById('tarih').valueAsDate = new Date();
+
+  // ============ YARDIMCI ============
+  function val(id) {
+    var el = document.getElementById(id);
+    return el ? (el.value || '').trim() : '';
+  }
+  function setVal(id, v) {
+    var el = document.getElementById(id);
+    if (el) el.value = v == null ? '' : v;
+  }
+  function formatTarih(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    if (p.length !== 3) return d;
+    return p[2] + '.' + p[1] + '.' + p[0];
+  }
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+  function trLower(s) { return String(s || '').toLocaleLowerCase('tr-TR'); }
+  function paraFormat(n) {
+    return Number(n || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function kisa(s, n) {
+    s = String(s || '');
+    return s.length > n ? s.substring(0, n - 1) + '…' : s;
+  }
+
+  // ============ SEKMELER ============
+  function sekmeDegistir(ad) {
+    document.querySelectorAll('.tab').forEach(function (t) {
+      t.classList.toggle('active', t.dataset.tab === ad);
+    });
+    document.querySelectorAll('.panel').forEach(function (p) {
+      p.classList.toggle('active', p.id === 'panel-' + ad);
+    });
+    if (ad === 'rapor' && !window._raporYuklendi) {
+      raporYukle();
+      window._raporYuklendi = true;
+    }
+  }
+
+  // ============ FİŞ ============
+  function formuOku() {
+    return {
+      musteri: val('musteri'),
+      telefon: val('telefon'),
+      tarih: val('tarih'),
+      cihaz: val('cihaz'),
+      sorun: val('sorun'),
+      yapilanIs: val('yapilanIs'),
+      ucret: val('ucret'),
+      yetkili: val('yetkili')
+    };
+  }
+
+  function olusturNusha(etiket, veri) {
+    return (
+      '<div class="receipt">' +
+        '<div class="r-header">' +
+          '<div class="logo-wrap">' +
+            '<div class="logo"><span class="mark">03</span>ÖNEL BİLİŞİM</div>' +
+            '<div class="logo-sub">Furkan ÖNEL &nbsp;·&nbsp; 0537 846 03 77</div>' +
+          '</div>' +
+          '<div class="r-title">' +
+            '<div class="t1">SERVİS FİŞİ</div>' +
+            '<div class="copy-label">' + etiket + '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="r-row">' +
+          '<div class="r-field"><div class="lbl">Müşteri / Firma</div><div class="val">' + escapeHtml(veri.musteri) + '</div></div>' +
+          '<div class="r-field" style="max-width:42mm;"><div class="lbl">Telefon</div><div class="val">' + escapeHtml(veri.telefon) + '</div></div>' +
+        '</div>' +
+
+        '<div class="r-row">' +
+          '<div class="r-field" style="max-width:35mm;"><div class="lbl">Tarih</div><div class="val">' + escapeHtml(formatTarih(veri.tarih)) + '</div></div>' +
+          '<div class="r-field"><div class="lbl">Cihaz / Ürün</div><div class="val">' + escapeHtml(veri.cihaz) + '</div></div>' +
+        '</div>' +
+
+        '<div class="r-box">' +
+          '<div class="lbl">Müşteri Sorunu / Yapılacak İşler</div>' +
+          '<div class="content">' + escapeHtml(veri.sorun) + '</div>' +
+        '</div>' +
+
+        '<div class="r-box small">' +
+          '<div class="lbl">Yapılan İş ve İşlemler</div>' +
+          '<div class="content">' + escapeHtml(veri.yapilanIs) + '</div>' +
+        '</div>' +
+
+        '<div class="r-row" style="margin-top:3mm;">' +
+          '<div class="r-field" style="max-width:45mm;"><div class="lbl">Ücret (₺)</div><div class="val">' + escapeHtml(veri.ucret) + '</div></div>' +
+        '</div>' +
+
+        '<div class="r-footer">' +
+          '<div class="r-note">Yukarıda belirtilen cihaz/ürünü yukarıdaki şikayet ve işlemler doğrultusunda teslim ettim/aldım. ' +
+          'Teslim sonrası oluşabilecek sorunlardan firma sorumlu değildir. Cihaz 30 gün içinde teslim alınmadığı takdirde doğacak sorumluluk müşteriye aittir.</div>' +
+          '<div class="sig-row">' +
+            '<div class="sig"><div class="line">Teslim Eden (Müşteri)</div></div>' +
+            '<div class="sig"><div class="line">Teslim Alan<br>' + escapeHtml(veri.yetkili) + '</div></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function yazdirVeri(veri) {
+    var html =
+      '<div class="a4-sheet">' +
+        olusturNusha('MÜŞTERİ NÜSHASI', veri) +
+        olusturNusha('FİRMA NÜSHASI', veri) +
+      '</div>';
+    document.getElementById('printArea').innerHTML = html;
+    setTimeout(function(){ window.print(); }, 150);
+  }
+
+  function yazdir() {
+    var veri = formuOku();
+    if (!veri.musteri) { toast('Lütfen müşteri / firma adını giriniz.', true); return; }
+    yazdirVeri(veri);
+  }
+
+  function kaydetVeYazdir() {
+    var veri = formuOku();
+    if (!veri.musteri) { toast('Lütfen müşteri / firma adını giriniz.', true); return; }
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.saved) {
+            toast('Kaydedildi. Yazdırılıyor...');
+            window._raporYuklendi = false;
+          } else if (res && res.mesaj) {
+            toast(res.mesaj, true);
+          } else {
+            toast('Yazdırılıyor.');
+          }
+          yazdirVeri(veri);
+        })
+        .withFailureHandler(function (err) {
+          toast('Kayıt hatası: ' + err.message, true);
+          yazdirVeri(veri);
+        })
+        .kaydet(veri);
+    } else {
+      yazdirVeri(veri);
+    }
+  }
+
+  function temizle() {
+    ['musteri','telefon','cihaz','sorun','yapilanIs','ucret'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('tarih').valueAsDate = new Date();
+    document.getElementById('musteri').focus();
+  }
+
+  // ============ RAPORLAR ============
+  var _sonRows = [];
+  var _sheetUrl = '';
+
+  function raporYukle() {
+    var filtre = {
+      baslangic: val('f-bas'),
+      bitis: val('f-bit'),
+      arama: val('f-ara')
+    };
+
+    document.getElementById('rpt-body').innerHTML =
+      '<tr><td colspan="9" class="empty">Yükleniyor...</td></tr>';
+
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      document.getElementById('rpt-body').innerHTML =
+        '<tr><td colspan="9" class="empty">Bu sayfa Apps Script dışında çalışıyor (önizleme).</td></tr>';
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        var uy = document.getElementById('kurulumUyari');
+        if (!res.ok) {
+          uy.style.display = 'block';
+          uy.innerHTML = '<b>Kurulum gerekli:</b> ' + escapeHtml(res.error) +
+            '<br>Apps Script editöründe üst menüden <b>kurulum</b> fonksiyonunu bir kez çalıştırın, sonra tekrar deneyin.';
+          document.getElementById('rpt-body').innerHTML =
+            '<tr><td colspan="9" class="empty">Henüz kayıt yok.</td></tr>';
+          setVal('st-sayi', '0');
+          setVal('st-toplam', '0,00');
+          document.getElementById('st-sayi').textContent = '0';
+          document.getElementById('st-toplam').textContent = '0,00';
+          return;
+        }
+        uy.style.display = 'none';
+        _sonRows = res.rows || [];
+        document.getElementById('st-sayi').textContent = _sonRows.length;
+        document.getElementById('st-toplam').textContent = paraFormat(res.toplam);
+        raporCiz(_sonRows);
+      })
+      .withFailureHandler(function (err) {
+        document.getElementById('rpt-body').innerHTML =
+          '<tr><td colspan="9" class="empty">Hata: ' + escapeHtml(err.message) + '</td></tr>';
+      })
+      .listele(filtre);
+  }
+
+  function raporCiz(rows) {
+    var body = document.getElementById('rpt-body');
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="9" class="empty">Bu filtreyle eşleşen kayıt yok.</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(function (r, i) {
+      return (
+        '<tr>' +
+          '<td><span class="badge">' + escapeHtml(r.kayitZamani) + '</span></td>' +
+          '<td>' + escapeHtml(r.musteri) + '</td>' +
+          '<td>' + escapeHtml(r.telefon) + '</td>' +
+          '<td class="truncate" title="' + escapeHtml(r.cihaz) + '">' + escapeHtml(kisa(r.cihaz, 30)) + '</td>' +
+          '<td class="truncate" title="' + escapeHtml(r.sorun) + '">' + escapeHtml(kisa(r.sorun, 40)) + '</td>' +
+          '<td class="truncate" title="' + escapeHtml(r.yapilanIs) + '">' + escapeHtml(kisa(r.yapilanIs, 40)) + '</td>' +
+          '<td class="n">' + escapeHtml(r.ucret) + '</td>' +
+          '<td>' + escapeHtml(r.yetkili) + '</td>' +
+          '<td><button class="btn-secondary btn-small" onclick="tekrarYazdir(' + i + ')">Yazdır</button></td>' +
+        '</tr>'
+      );
+    }).join('');
+  }
+
+  function tekrarYazdir(i) {
+    var r = _sonRows[i];
+    if (!r) return;
+    yazdirVeri({
+      musteri: r.musteri,
+      telefon: r.telefon,
+      tarih: r.tarih,
+      cihaz: r.cihaz,
+      sorun: r.sorun,
+      yapilanIs: r.yapilanIs,
+      ucret: r.ucret,
+      yetkili: r.yetkili
+    });
+  }
+
+  function raporSifirla() {
+    setVal('f-bas', '');
+    setVal('f-bit', '');
+    setVal('f-ara', '');
+    raporYukle();
+  }
+
+  function sheetAc() {
+    if (_sheetUrl) {
+      window.open(_sheetUrl, '_blank');
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res.ok) {
+          _sheetUrl = res.url;
+          window.open(res.url, '_blank');
+        } else {
+          toast(res.error, true);
+        }
+      })
+      .withFailureHandler(function (err) { toast(err.message, true); })
+      .sheetBilgisi();
+  }
+
+  function csvIndir() {
+    if (!_sonRows.length) { toast('İndirilecek kayıt yok.', true); return; }
+    var basliklar = ['Kayit Zamani','Tarih','Musteri','Telefon','Cihaz','Sorun','Yapilan Is','Ucret','Yetkili'];
+    var lines = [basliklar.join(';')];
+    _sonRows.forEach(function (r) {
+      var sat = [r.kayitZamani, r.tarih, r.musteri, r.telefon, r.cihaz, r.sorun, r.yapilanIs, r.ucret, r.yetkili]
+        .map(function (v) {
+          v = String(v == null ? '' : v).replace(/"/g, '""').replace(/\r?\n/g, ' ');
+          return '"' + v + '"';
+        });
+      lines.push(sat.join(';'));
+    });
+    var csv = '\ufeff' + lines.join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'servis-raporu-' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ============ TOAST ============
+  function toast(msg, hata) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = hata ? '#dc2626' : '#16a34a';
+    t.style.display = 'block';
+    clearTimeout(t._h);
+    t._h = setTimeout(function(){ t.style.display = 'none'; }, 3000);
+  }
+</script>
+</body>
+</html>
