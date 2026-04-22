@@ -37,29 +37,29 @@ export async function ayarKaydet(ayar: ApiAyar): Promise<void> {
   await Preferences.set({ key: KEY_TOKEN, value: ayar.token.trim() });
 }
 
-async function call<T>(action: string, params: Record<string, unknown> = {}): Promise<T> {
+async function call<T>(action: string, extra: Record<string, unknown> = {}): Promise<T> {
   const { url, token } = await ayarOku();
   if (!url) throw new Error('Apps Script URL ayarlanmamış. Ayarlar ekranını açın.');
 
-  // GET ile çağır: Apps Script /exec POST → 302 ile GET'e düşüyor ve
-  // body kayboluyor. GET + query string her durumda çalışır.
-  const qs = new URLSearchParams();
-  qs.set('action', action);
-  if (token) qs.set('token', token);
-  for (const [k, v] of Object.entries(params)) {
+  // GET + params: Apps Script /exec POST için 302 ile GET'e düşülüyor ve
+  // body kayboluyor. GET + query string kullanıyoruz; query'yi URL içine
+  // gömmek yerine CapacitorHttp'nin params alanına veriyoruz.
+  const params: Record<string, string> = { action };
+  if (token) params.token = token;
+  for (const [k, v] of Object.entries(extra)) {
     if (v == null) continue;
     if (typeof v === 'object') {
       for (const [k2, v2] of Object.entries(v as Record<string, unknown>)) {
-        if (v2 != null) qs.set(k2, String(v2));
+        if (v2 != null && v2 !== '') params[k2] = String(v2);
       }
-    } else {
-      qs.set(k, String(v));
+    } else if (v !== '') {
+      params[k] = String(v);
     }
   }
-  const finalUrl = url + (url.includes('?') ? '&' : '?') + qs.toString();
 
   const res = await CapacitorHttp.get({
-    url: finalUrl,
+    url,
+    params,
     connectTimeout: 30000,
     readTimeout: 60000,
   });
