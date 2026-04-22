@@ -41,9 +41,10 @@ async function call<T>(action: string, extra: Record<string, unknown> = {}): Pro
   const { url, token } = await ayarOku();
   if (!url) throw new Error('Apps Script URL ayarlanmamış. Ayarlar ekranını açın.');
 
-  // GET + params: Apps Script /exec POST için 302 ile GET'e düşülüyor ve
-  // body kayboluyor. GET + query string kullanıyoruz; query'yi URL içine
-  // gömmek yerine CapacitorHttp'nin params alanına veriyoruz.
+  // Apps Script /exec POST → 302 GET'e düşüyor ve body kayboluyor. GET
+  // kullanıyoruz. Parametreleri hem URL'ye gömüyoruz hem de
+  // CapacitorHttp.params alanına yazıyoruz — böylece native HTTP
+  // katmanı hangisini kullanırsa kullansın query sunucuya ulaşır.
   const params: Record<string, string> = { action };
   if (token) params.token = token;
   for (const [k, v] of Object.entries(extra)) {
@@ -57,24 +58,28 @@ async function call<T>(action: string, extra: Record<string, unknown> = {}): Pro
     }
   }
 
+  const qs = new URLSearchParams(params).toString();
+  const finalUrl = url + (url.includes('?') ? '&' : '?') + qs;
+
   const res = await CapacitorHttp.get({
-    url,
+    url: finalUrl,
     params,
     connectTimeout: 30000,
     readTimeout: 60000,
   });
 
   if (res.status < 200 || res.status >= 300) {
-    throw new Error(`HTTP ${res.status}`);
+    throw new Error(`HTTP ${res.status} · ${action}`);
   }
   let data: any = res.data;
   if (typeof data === 'string') {
     try {
       data = JSON.parse(data);
     } catch {
-      const onizleme = data.slice(0, 180).replace(/\s+/g, ' ');
+      const onizleme = data.slice(0, 140).replace(/\s+/g, ' ');
+      const urlKuyruk = finalUrl.slice(-80);
       throw new Error(
-        `Geçersiz JSON cevabı. Dağıtımda "Erişim: Herkes" seçili mi? Gelen: ${onizleme}...`
+        `Geçersiz JSON. URL sonu: ...${urlKuyruk} · Gelen: ${onizleme}...`
       );
     }
   }
